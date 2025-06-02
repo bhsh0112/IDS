@@ -11,7 +11,7 @@ import torch
 import seaborn as sns
 from imblearn.over_sampling import SMOTE
 
-from train import NetworkDataset, TransformerModel
+from IDS.transformerBase_train import NetworkDataset, TransformerModel
 
 # # 设置随机种子确保可复现性
 # SEED = 42
