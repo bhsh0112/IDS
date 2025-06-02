@@ -11,3 +11,13 @@
 
 ## 1 Get Start
 
+测试时使用的python版本是3.9
+
+### 1.1 安装与cuda版本适配的pytorch
+
+### 1.2 其他软件环境
+
+```
+pip install -r requirements.txt
+```
+
