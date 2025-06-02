@@ -163,35 +163,11 @@ def load_and_preprocess_data(train_path, test_path):
     X_test = test_df.drop(columns=['label'])
     y_test = test_df['label'].values.astype(np.float32)
     
-    # 处理类别不平衡
-    print("Addressing class imbalance...")
-    print(f"Class distribution before balancing: Normal={np.sum(y_train == 0)}, Attack={np.sum(y_train == 1)}")
-    
-    # 使用SMOTE过采样
-    smote = SMOTE(sampling_strategy='minority', random_state=SEED)
-    X_train, y_train = smote.fit_resample(X_train, y_train)
-    print(f"Class distribution after balancing: Normal={np.sum(y_train == 0)}, Attack={np.sum(y_train == 1)}")
-    
-    # 处理类别特征
+    # 识别特征类型
     categorical_cols = ['proto', 'service', 'state']
-    print("Processing categorical features...")
-    for col in categorical_cols:
-        # 合并低频类别
-        train_counts = X_train[col].value_counts()
-        low_freq_train = train_counts[train_counts < 100].index
-        test_counts = X_test[col].value_counts()
-        low_freq_test = test_counts[test_counts < 50].index
-        
-        # 替换特殊值和低频值
-        X_train[col] = X_train[col].replace('-', 'unknown')
-        X_test[col] = X_test[col].replace('-', 'unknown')
-        X_train[col] = X_train[col].replace(list(low_freq_train), 'other')
-        X_test[col] = X_test[col].replace(list(low_freq_test), 'other')
-    
-    # 数值特征
     numeric_cols = [col for col in X_train.columns if col not in categorical_cols]
     
-    # 创建预处理管道
+    # 创建预处理管道 - 统一处理数值和类别特征
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), numeric_cols),
@@ -203,6 +179,15 @@ def load_and_preprocess_data(train_path, test_path):
     print("Applying preprocessing...")
     X_train_preprocessed = preprocessor.fit_transform(X_train)
     X_test_preprocessed = preprocessor.transform(X_test)
+    
+    # 处理类别不平衡（在预处理后执行！）
+    print("Addressing class imbalance...")
+    print(f"Class distribution before balancing: Normal={np.sum(y_train == 0)}, Attack={np.sum(y_train == 1)}")
+    
+    # 使用SMOTE过采样
+    smote = SMOTE(sampling_strategy='minority', random_state=SEED)
+    X_train_preprocessed, y_train = smote.fit_resample(X_train_preprocessed, y_train)
+    print(f"Class distribution after balancing: Normal={np.sum(y_train == 0)}, Attack={np.sum(y_train == 1)}")
     
     # 特征选择
     print("Performing feature selection...")
@@ -264,7 +249,7 @@ def create_data_loaders(train_dataset, test_dataset, batch_size=1024):
     return train_loader, val_loader, test_loader
 
 def train_model(model, train_loader, val_loader, y_train, 
-                num_epochs=100, lr=0.001, early_stopping_patience=15):
+                num_epochs=300, lr=0.001, early_stopping_patience=15):
     """训练模型"""
     print("Starting model training...")
     
@@ -409,7 +394,7 @@ def train_model(model, train_loader, val_loader, y_train,
                 'recall': recall,
                 'precision': precision,
                 'history': history
-            }, "best_transformer_model.pth")
+            }, "./runs/best_transformer_model.pth")
             
             print(f"Best model saved with F1: {f1:.4f}")
         else:
@@ -455,6 +440,13 @@ def evaluate_model(model, test_loader):
     recall = recall_score(all_labels, all_preds)
     accuracy = np.mean(np.array(all_preds) == np.array(all_labels))
     
+    #整体报告
+    print("\nWhole Report:")
+    print("F1:", f1)
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("Accuracy:", accuracy)
+
     # 分类报告
     print("\nClassification Report:")
     print(classification_report(all_labels, all_preds, target_names=['Normal', 'Attack']))
@@ -468,7 +460,7 @@ def evaluate_model(model, test_loader):
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
     plt.title('Confusion Matrix')
-    plt.savefig('confusion_matrix.png')
+    plt.savefig('./runs/confusion_matrix.png')
     plt.show()
     
     # 返回评估结果
@@ -517,7 +509,7 @@ def plot_training_history(history):
     
     # 保存图表
     plt.tight_layout()
-    plt.savefig('training_history.png')
+    plt.savefig('./runs/training_history.png')
     plt.show()
 
 def find_optimal_threshold(model, val_loader):
@@ -554,16 +546,10 @@ def find_optimal_threshold(model, val_loader):
     return best_thresh
 
 if __name__ == "__main__":
-    # 数据集路径
-    train_path = "./data/UNSW_NB15/UNSW_NB15_training-set.csv"
-    test_path = "./data/UNSW_NB15/UNSW_NB15_testing-set.csv"
-    
-    # 加载和预处理数据
+    train_path = "./data/UNSW_NB15_training-set.csv"
+    test_path = "./data/UNSW_NB15_testing-set.csv"
     train_dataset, test_dataset, y_train = load_and_preprocess_data(train_path, test_path)
-    
-    # 创建数据加载器
-    batch_size = 2048  # 更大的批大小可以更好地利用GPU
-    train_loader, val_loader, test_loader = create_data_loaders(train_dataset, test_dataset, batch_size)
+    train_loader, val_loader, test_loader = create_data_loaders(train_dataset, test_dataset, batch_size=2048)
     
     # 模型参数
     input_features = train_dataset.features.shape[1]
@@ -590,7 +576,7 @@ if __name__ == "__main__":
         train_loader=train_loader,
         val_loader=val_loader,
         y_train=y_train,
-        num_epochs=100,
+        num_epochs=300,
         lr=0.0005,
         early_stopping_patience=15
     )
@@ -609,5 +595,5 @@ if __name__ == "__main__":
         'model_state_dict': trained_model.state_dict(),
         'input_features': input_features,
         'eval_results': eval_results
-    }, "final_transformer_model.pth")
+    }, "./runs/final_transformer_model.pth")
     print("Final model saved.")
