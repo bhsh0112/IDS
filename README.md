@@ -50,7 +50,7 @@ pip install -r requirements.txt
 
 #### 1.3.2 实采数据
 
-数据采集方式
+数据采集方式见[get_data.md](https://github.com/bhsh0112/IDS/blob/main/get_data.md)
 
 ### 1.4 代码运行
 
