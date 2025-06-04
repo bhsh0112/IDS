@@ -22,6 +22,8 @@ var/
 wheels/
 pip-wheel-metadata/
 share/python-wheels/
+data/
+runs/
 
 # PyInstaller打包相关
 *.manifest

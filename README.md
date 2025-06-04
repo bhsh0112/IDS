@@ -42,3 +42,31 @@
 pip install -r requirements.txt
 ```
 
+### 1.3 数据配置
+
+#### 1.3.1 开源数据
+
+使用开源数据集UNSW_NB15，直接在[官网](https://www.kaggle.com/datasets/mrwellsdavid/unsw-nb15?select=UNSW_NB15_testing-set.csv)下载并解压到自定义路径并使用即可
+
+#### 1.3.2 实采数据
+
+数据采集方式
+
+### 1.4 代码运行
+
+#### 训练
+
+```
+python transformerBase_train.py
+```
+
+可以在代码549~550行修改数据输入路径
+
+#### 验证
+
+```
+python transformerBase_eval.py
+```
+
+可以在代码第195、196行分别修改数据输入路径和权重输入路径
+

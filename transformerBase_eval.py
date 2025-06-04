@@ -11,7 +11,7 @@ import torch
 import seaborn as sns
 from imblearn.over_sampling import SMOTE
 
-from IDS.transformerBase_train import NetworkDataset, TransformerModel
+from transformerBase_train import NetworkDataset, TransformerModel
 
 # # 设置随机种子确保可复现性
 # SEED = 42
@@ -167,19 +167,7 @@ def evaluate_model(model, val_loader):
     
     # 分类报告
     print("\nClassification Report:")
-    print(classification_report(all_labels, all_preds, target_names=['Normal', 'Attack']))
-    
-    # 混淆矩阵
-    cm = confusion_matrix(all_labels, all_preds)
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                xticklabels=['Normal', 'Attack'], 
-                yticklabels=['Normal', 'Attack'])
-    plt.xlabel('Predicted')
-    plt.ylabel('Actual')
-    plt.title('Confusion Matrix')
-    plt.savefig('confusion_matrix.png')
-    plt.show()
+    print(classification_report(all_labels, all_preds, target_names=['Normal', 'Attack']))    
     
     # 返回评估结果
     return {
@@ -192,8 +180,8 @@ def evaluate_model(model, val_loader):
         'labels': all_labels
     }
 
-val_path = "./data/UNSW_NB15_testing-set.csv"
-model_path="./best_transformer_model.pth"
+val_path = "./data/UNSW_NB15_training-set.csv"
+model_path="./runs/best_transformer_model.pth"
 val_dataset = load_and_preprocess_data(val_path)  
 val_loader= create_val_dataloader(val_dataset, batch_size=512)
 model=load_model(val_dataset,model_path)
